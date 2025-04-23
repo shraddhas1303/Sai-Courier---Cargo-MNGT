@@ -1,26 +1,46 @@
 <?php
-session_start();
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
+$host = 'localhost';
+$username = 'root';
+$password = '';
+$dbname = 'user';
+
+
+$conn = new mysqli($host, $username, $password, $dbname);
+
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
+
+$message = ""; 
+
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $customer_name = $_POST['customer_name'];
+    $customer_mobile = $_POST['customer_mobile'];
+    $customer_type = $_POST['customer_type'];
+
+   
+    $sql = "INSERT INTO customers (customer_name, customer_mobile, customer_type) 
+            VALUES ('$customer_name', '$customer_mobile', '$customer_type')";
+
+    if ($conn->query($sql) === TRUE) {
+        $message = "Customer added successfully!";
+    } else {
+        $message = "Error: " . $conn->error;
+    }
+}
+
+$conn->close();
 ?>
-
-
-
-
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Example</title>
+    <title>Add Customer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -30,6 +50,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             margin: 0;
             padding: 0;
         }
+
         .sidebar {
             height: 100vh;
             background-color: #1a2a41;
@@ -37,19 +58,15 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             padding: 30px;
             position: fixed;
             width: 240px;
-            transition: all 0.3s ease;
         }
+
         .sidebar h2 {
             font-size: 24px;
             text-align: center;
             font-weight: bold;
             margin-bottom: 30px;
         }
-        .sidebar h5 {
-            text-align: center;
-            color: #ddd;
-            margin-bottom: 40px;
-        }
+
         .sidebar a {
             display: block;
             color: #fff;
@@ -57,20 +74,12 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             padding: 12px 15px;
             margin-bottom: 12px;
             border-radius: 5px;
-            transition: background-color 0.3s ease;
         }
+
         .sidebar a:hover {
             background-color: #3d4f6a;
         }
-        .sidebar .footer-icons {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .sidebar .footer-icons i {
-            margin: 0 15px;
-            font-size: 22px;
-            cursor: pointer;
-        }
+
         .topbar {
             background-color: #fff;
             padding: 10px 20px;
@@ -80,15 +89,35 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             border-bottom: 1px solid #ddd;
             margin-left: 240px;
         }
-        .topbar .dropdown-toggle {
-            background: none;
-            border: none;
-            padding: 0;
-        }
+
         .content {
             margin-left: 260px;
             padding: 30px;
         }
+
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: #ffffff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .btn-custom {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .btn-custom:hover {
+            background-color: #0056b3;
+        }
+
         .footer {
             text-align: center;
             padding: 16px;
@@ -98,39 +127,36 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             position: fixed;
             bottom: 0;
             left: 240px;
-            width: calc(100% - 300px);
-            height: 7%;
-        }
-        .dropdown-menu-end {
-            min-width: 150px;
-        }
-        .footer-icons i:hover {
-            color: #007bff;
-        }
-        .dropdown-menu {
-            padding: 0;
-        }
-        .dropdown-menu a {
-            padding: 10px 15px;
-        }
-        .dropdown-menu a:hover {
-            background-color: lightgrey;
-            color: #1a0101;
-        }
-        .content h2 {
-            font-size: 32px;
-            font-weight: bold;
-            color: #343a40;
-        }
-        .content p {
-            font-size: 18px;
-            color: #6c757d;
+            width: calc(100% - 240px);
         }
     </style>
+    <script>
+        
+        function validateForm() {
+            var name = document.getElementById("customer_name").value;
+            var mobile = document.getElementById("customer_mobile").value;
+
+            
+            var namePattern = /^[a-zA-Z\s]+$/;
+            if (!namePattern.test(name)) {
+                alert("Customer Name should only contain letters.");
+                return false;
+            }
+
+           
+            var mobilePattern = /^[0-9]{10}$/;
+            if (!mobilePattern.test(mobile)) {
+                alert("Customer Mobile should contain exactly 10 digits.");
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 </head>
 <body>
 
-
+<!-- Sidebar -->
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
 
@@ -155,7 +181,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         </ul>
     </div>
     
-   
     <div class="dropdown">
         <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bar-chart-line"></i> Reports
@@ -165,40 +190,54 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             <li><a class="dropdown-item" href="#" style="color:black">Monthly Report</a></li>
         </ul>
     </div>
-    
-    <div class="footer-icons">
-        <i class="bi bi-telephone"></i>
-        <i class="bi bi-chat-dots"></i>
-    </div>
 </div>
 
+
 <div class="topbar">
+    <h3>Dashboard</h3>
     <div>
         <button class="btn btn-light"><i class="bi bi-list"></i></button>
-    </div>
-    <div>
-        <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="https://th.bing.com/th?q=Female+Profile+Icon+Circle&w=120&h=120&c=1&rs=1&qlt=90&cb=1&dpr=1.3&pid=InlineBlock&mkt=en-IN&cc=IN&setlang=en&adlt=moderate&t=1&mw=247" class="rounded-circle" alt="Profile" style="height:50px; width: 50px;">
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                <li><a class="dropdown-item" href="update.php">Profile & Security</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="index.php">Logout</a></li>
-            </ul>
-        </div>
     </div>
 </div>
 
 
 <div class="content">
-    <h2>Welcome to the Dashboard</h2>
+    <h2>Add New Customer</h2>
+
     
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-success"><?php echo $message; ?></div>
+    <?php endif; ?>
+
+    <div class="form-container">
+        <h3>Enter Customer Details</h3>
+        <form action="" method="POST" onsubmit="return validateForm()">
+            <div class="form-group">
+                <label for="customer_name">Customer Name</label>
+                <input type="text" id="customer_name" name="customer_name" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customer_mobile">Customer Mobile</label>
+                <input type="text" id="customer_mobile" name="customer_mobile" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customer_type">Customer Type</label>
+                <select id="customer_type" name="customer_type" class="form-control" required>
+                    <option value="sender">Sender</option>
+                    <option value="receiver">Receiver</option>
+                </select>
+            </div><br>
+
+            <button type="submit" class="btn-custom">Add Customer</button>
+        </form>
+    </div>
 </div>
 
 
 <div class="footer">
-    <p></p>
+    &copy; 2025 SAI Courier and Cargo
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,26 +1,40 @@
 <?php
-session_start();
+// Database connection
+$servername = "localhost"; 
+$username = "root"; 
+$password = ""; 
+$dbname = "user"; 
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
+
+// Handle delete operation
+if (isset($_GET['delete_id'])) {
+    $delete_id = intval($_GET['delete_id']);
+    $sql = "DELETE FROM destination WHERE dest_id = $delete_id";
+    if ($conn->query($sql) === TRUE) {
+        echo "<script>alert('Destination deleted successfully!'); window.location.href='showlist.php';</script>";
+    } else {
+        echo "Error deleting record: " . $conn->error;
+    }
+}
+
+// Fetch destinations
+$sql = "SELECT * FROM destination ORDER BY dest_id ASC";
+$result = $conn->query($sql);
 ?>
-
-
-
-
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Example</title>
+    <title>Destination List</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -37,18 +51,12 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             padding: 30px;
             position: fixed;
             width: 240px;
-            transition: all 0.3s ease;
         }
         .sidebar h2 {
             font-size: 24px;
             text-align: center;
             font-weight: bold;
             margin-bottom: 30px;
-        }
-        .sidebar h5 {
-            text-align: center;
-            color: #ddd;
-            margin-bottom: 40px;
         }
         .sidebar a {
             display: block;
@@ -60,16 +68,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             transition: background-color 0.3s ease;
         }
         .sidebar a:hover {
-            background-color: #3d4f6a;
-        }
-        .sidebar .footer-icons {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .sidebar .footer-icons i {
-            margin: 0 15px;
-            font-size: 22px;
-            cursor: pointer;
+            background-color: lightgray;
         }
         .topbar {
             background-color: #fff;
@@ -80,14 +79,33 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             border-bottom: 1px solid #ddd;
             margin-left: 240px;
         }
-        .topbar .dropdown-toggle {
-            background: none;
-            border: none;
-            padding: 0;
-        }
         .content {
             margin-left: 260px;
             padding: 30px;
+        }
+        .btn-orange {
+            background-color: #f57c00;
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-orange:hover {
+            background-color: #e76900;
+        }
+        .btn-red {
+            background-color: #e53935;
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-red:hover {
+            background-color: #d32f2f;
         }
         .footer {
             text-align: center;
@@ -98,39 +116,13 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             position: fixed;
             bottom: 0;
             left: 240px;
-            width: calc(100% - 300px);
-            height: 7%;
-        }
-        .dropdown-menu-end {
-            min-width: 150px;
-        }
-        .footer-icons i:hover {
-            color: #007bff;
-        }
-        .dropdown-menu {
-            padding: 0;
-        }
-        .dropdown-menu a {
-            padding: 10px 15px;
-        }
-        .dropdown-menu a:hover {
-            background-color: lightgrey;
-            color: #1a0101;
-        }
-        .content h2 {
-            font-size: 32px;
-            font-weight: bold;
-            color: #343a40;
-        }
-        .content p {
-            font-size: 18px;
-            color: #6c757d;
+            width: calc(100% - 240px);
         }
     </style>
 </head>
 <body>
 
-
+<!-- Sidebar -->
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
 
@@ -172,6 +164,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
 </div>
 
+<!-- Topbar -->
 <div class="topbar">
     <div>
         <button class="btn btn-light"><i class="bi bi-list"></i></button>
@@ -184,22 +177,59 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                 <li><a class="dropdown-item" href="update.php">Profile & Security</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="index.php">Logout</a></li>
+                <li><a class="dropdown-item" href="#">Logout</a></li>
             </ul>
         </div>
     </div>
 </div>
 
-
+<!-- Content -->
 <div class="content">
-    <h2>Welcome to the Dashboard</h2>
-    
+    <h2 class="text-center mb-4">Destination List</h2>
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Sr. No</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($result->num_rows > 0): ?>
+                <?php $sr_no = 1; ?>
+                <?php while ($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $sr_no++; ?></td>
+                        <td><?php echo htmlspecialchars($row['dest_name']); ?></td>
+                        <td><?php echo htmlspecialchars($row['dest_status']); ?></td>
+                        <td>
+                            <a href="edit_destination.php?id=<?php echo $row['dest_id']; ?>" class="btn btn-orange btn-sm">Edit</a>
+                            <button onclick="confirmDelete(<?php echo $row['dest_id']; ?>)" class="btn btn-red btn-sm">Delete</button>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="4" class="text-center">No destinations found</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
 </div>
 
-
+<!-- Footer -->
 <div class="footer">
-    <p></p>
+    <p>&copy; 2024 Sai Courier and Cargo</p>
 </div>
+
+<script>
+    function confirmDelete(id) {
+        if (confirm('Are you sure you want to delete this destination?')) {
+            window.location.href = '?delete_id=' + id;
+        }
+    }
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

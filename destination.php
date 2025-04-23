@@ -1,19 +1,34 @@
 <?php
-session_start();
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
+$servername = "localhost"; 
+$username = "root"; 
+$password = ""; 
+$dbname = "user"; 
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$message = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $destination = $conn->real_escape_string($_POST['destination']);
+
+    // Ensure destination contains only text
+    if (preg_match("/^[a-zA-Z\s]+$/", $destination)) {
+        $sql = "INSERT INTO destination (dest_name, dest_status) VALUES ('$destination', 'active')";
+        if ($conn->query($sql) === TRUE) {
+            $message = "Destination added successfully!";
+        } else {
+            $message = "Error: " . $sql . "<br>" . $conn->error;
+        }
+    } else {
+        $message = "Error: Destination can only contain letters and spaces.";
+    }
 }
 ?>
-
-
-
-
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -45,11 +60,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             font-weight: bold;
             margin-bottom: 30px;
         }
-        .sidebar h5 {
-            text-align: center;
-            color: #ddd;
-            margin-bottom: 40px;
-        }
         .sidebar a {
             display: block;
             color: #fff;
@@ -62,15 +72,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         .sidebar a:hover {
             background-color: #3d4f6a;
         }
-        .sidebar .footer-icons {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .sidebar .footer-icons i {
-            margin: 0 15px;
-            font-size: 22px;
-            cursor: pointer;
-        }
         .topbar {
             background-color: #fff;
             padding: 10px 20px;
@@ -79,11 +80,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             justify-content: space-between;
             border-bottom: 1px solid #ddd;
             margin-left: 240px;
-        }
-        .topbar .dropdown-toggle {
-            background: none;
-            border: none;
-            padding: 0;
         }
         .content {
             margin-left: 260px;
@@ -98,38 +94,31 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             position: fixed;
             bottom: 0;
             left: 240px;
-            width: calc(100% - 300px);
-            height: 7%;
+            width: calc(100% - 240px);
         }
-        .dropdown-menu-end {
-            min-width: 150px;
+        .form-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
         }
-        .footer-icons i:hover {
-            color: #007bff;
-        }
-        .dropdown-menu {
-            padding: 0;
-        }
-        .dropdown-menu a {
-            padding: 10px 15px;
-        }
-        .dropdown-menu a:hover {
-            background-color: lightgrey;
-            color: #1a0101;
-        }
-        .content h2 {
-            font-size: 32px;
+        .btn-orange {
+            background-color: #f57c00;
+            color: #fff;
             font-weight: bold;
-            color: #343a40;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        .content p {
-            font-size: 18px;
-            color: #6c757d;
+        .btn-orange:hover {
+            background-color: #e76900;
         }
     </style>
 </head>
 <body>
-
 
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
@@ -151,11 +140,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         </a>
         <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="createbill.php" style="color:black">Create Bill</a></li>
-            <li><a class="dropdown-item" href="#" style="color:black">Bill List</a></li>
+            <li><a class="dropdown-item" href="billlist.php" style="color:black">Bill List</a></li>
         </ul>
     </div>
     
-   
     <div class="dropdown">
         <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bar-chart-line"></i> Reports
@@ -178,10 +166,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
     <div>
         <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="https://th.bing.com/th?q=Female+Profile+Icon+Circle&w=120&h=120&c=1&rs=1&qlt=90&cb=1&dpr=1.3&pid=InlineBlock&mkt=en-IN&cc=IN&setlang=en&adlt=moderate&t=1&mw=247" class="rounded-circle" alt="Profile" style="height:50px; width: 50px;">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="https://th.bing.com/th?q=Female+Profile+Icon+Circle&w=120&h=120&c=1&rs=1&qlt=90&cb=1&dpr=1.3&pid=InlineBlock&mkt=en-IN&cc=IN&setlang=en&adlt=moderate&t=1&mw=247" class="rounded-circle" alt="Profile" style="height:50px; width:50px;">
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="update.php">Profile & Security</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="index.php">Logout</a></li>
@@ -190,15 +178,26 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
 </div>
 
-
 <div class="content">
-    <h2>Welcome to the Dashboard</h2>
-    
+    <div class="form-container">
+        <h3 class="text-center">Add Destination</h3>
+        <?php if (!empty($message)): ?>
+            <div class="alert alert-info text-center"><?php echo $message; ?></div>
+        <?php endif; ?>
+        <form action="" method="POST">
+            <div class="mb-3">
+                <label for="destination" class="form-label">Destination</label>
+                <input type="text" class="form-control" id="destination" name="destination" required>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn-orange">Save</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-
 <div class="footer">
-    <p></p>
+    &copy; 2024 SAI Courier and Cargo. All Rights Reversed.
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>

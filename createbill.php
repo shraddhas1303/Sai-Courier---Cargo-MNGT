@@ -1,26 +1,9 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
-}
-?>
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Example</title>
+    <title>Bill Receipt</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -44,11 +27,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             text-align: center;
             font-weight: bold;
             margin-bottom: 30px;
-        }
-        .sidebar h5 {
-            text-align: center;
-            color: #ddd;
-            margin-bottom: 40px;
         }
         .sidebar a {
             display: block;
@@ -101,36 +79,53 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             width: calc(100% - 300px);
             height: 7%;
         }
-        .dropdown-menu-end {
-            min-width: 150px;
+        .bill-container {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px auto;
+            width: 80%;
+            background-color: #fff;
         }
-        .footer-icons i:hover {
-            color: #007bff;
+        .bill-header {
+            text-align: center;
+            margin-bottom: 10px;
         }
-        .dropdown-menu {
-            padding: 0;
-        }
-        .dropdown-menu a {
-            padding: 10px 15px;
-        }
-        .dropdown-menu a:hover {
-            background-color: lightgrey;
-            color: #1a0101;
-        }
-        .content h2 {
-            font-size: 32px;
-            font-weight: bold;
-            color: #343a40;
-        }
-        .content p {
+        .bill-header h1 {
             font-size: 18px;
-            color: #6c757d;
+            margin: 0;
+        }
+        .bill-header h2 {
+            font-size: 14px;
+            margin: 0;
+        }
+        .bill-section label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .bill-section input,
+        .bill-section select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .bill-footer {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .btn {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
-
-
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
 
@@ -171,36 +166,93 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         <i class="bi bi-chat-dots"></i>
     </div>
 </div>
-
-<div class="topbar">
-    <div>
+    
+    <div class="topbar">
         <button class="btn btn-light"><i class="bi bi-list"></i></button>
-    </div>
-    <div>
         <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="https://th.bing.com/th?q=Female+Profile+Icon+Circle&w=120&h=120&c=1&rs=1&qlt=90&cb=1&dpr=1.3&pid=InlineBlock&mkt=en-IN&cc=IN&setlang=en&adlt=moderate&t=1&mw=247" class="rounded-circle" alt="Profile" style="height:50px; width: 50px;">
+            <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <img src="https://th.bing.com/th?q=Female+Profile+Icon+Circle&w=120&h=120&c=1&rs=1&qlt=90&cb=1&dpr=1.3&pid=InlineBlock&mkt=en-IN&cc=IN&setlang=en&adlt=moderate&t=1&mw=247" class="rounded-circle" alt="Profile" style="height:50px; width:50px;">
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="update.php">Profile & Security</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="index.php">Logout</a></li>
             </ul>
         </div>
     </div>
-</div>
-
-
-<div class="content">
-    <h2>Welcome to the Dashboard</h2>
     
-</div>
-
-
-<div class="footer">
-    <p></p>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="content">
+        <div class="bill-container">
+            <div class="bill-header">
+                <h1>Bill Receipt</h1>
+                <h2>Receipt No.: AUTO</h2>
+                <h2>Receipt Date: <span id="today-date"></span></h2>
+            </div>
+            <div class="bill-section">
+                <label>Origin:</label>
+                <input type="text" value="Nashik" disabled>
+            </div>
+            <div class="bill-section">
+                <label>Destination:</label>
+                <select>
+                    <option value="">Select Destination</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Nagpur">Nagpur</option>
+                </select>
+            </div>
+            <div class="bill-section">
+                <label>Sender Type:</label>
+                <select>
+                    <option value="">Select Sender Type</option>
+                    <option value="Individual">Individual</option>
+                    <option value="Business">Business</option>
+                </select>
+            </div>
+            <div class="bill-section">
+                <label>Receiver Type:</label>
+                <select>
+                    <option value="">Select Receiver Type</option>
+                    <option value="Individual">Individual</option>
+                    <option value="Business">Business</option>
+                </select>
+            </div>
+            <div class="bill-section">
+                <label>Product Parcel:</label>
+                <select>
+                    <option value="">Select Parcel Type</option>
+                    <option value="Docx">Document</option>
+                    <option value="Parcel">Parcel</option>
+                </select>
+            </div>
+            <div class="bill-section">
+                <label>Value:</label>
+                <input type="text" placeholder="Enter Value">
+            </div>
+            <div class="bill-section">
+                <label>Weight:</label>
+                <input type="text" placeholder="Enter Weight">
+            </div>
+            <div class="bill-section">
+                <label>Amount:</label>
+                <input type="text" placeholder="Enter Amount">
+            </div>
+            <div class="bill-footer">
+                <button class="btn" onclick="printBill()">Save and Print</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 SAI Courier and Cargo</p>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('today-date').innerText = new Date().toLocaleDateString();
+        function printBill() {
+            window.print();
+        }
+    </script>
 </body>
 </html>

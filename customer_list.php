@@ -1,26 +1,44 @@
 <?php
-session_start();
+// Database connection
+$host = 'localhost';
+$username = 'root';
+$password = '';
+$dbname = 'user';
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
+// Create connection
+$conn = new mysqli($host, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
+
+// Handle delete request
+if (isset($_GET['delete_id'])) {
+    $delete_id = $_GET['delete_id'];
+    $delete_sql = "DELETE FROM customers WHERE id = $delete_id";
+    if ($conn->query($delete_sql) === TRUE) {
+        header("Location: customer_list.php?message=Customer+deleted+successfully");
+        exit;
+    } else {
+        echo "<div class='alert alert-danger'>Error deleting customer: " . $conn->error . "</div>";
+    }
+}
+
+// Retrieve customers by type
+$sql_senders = "SELECT * FROM customers WHERE customer_type = 'Sender'";
+$result_senders = $conn->query($sql_senders);
+
+$sql_receivers = "SELECT * FROM customers WHERE customer_type = 'Receiver'";
+$result_receivers = $conn->query($sql_receivers);
 ?>
-
-
-
-
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Example</title>
+    <title>Customer List - Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -37,18 +55,12 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             padding: 30px;
             position: fixed;
             width: 240px;
-            transition: all 0.3s ease;
         }
         .sidebar h2 {
             font-size: 24px;
             text-align: center;
             font-weight: bold;
             margin-bottom: 30px;
-        }
-        .sidebar h5 {
-            text-align: center;
-            color: #ddd;
-            margin-bottom: 40px;
         }
         .sidebar a {
             display: block;
@@ -57,19 +69,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             padding: 12px 15px;
             margin-bottom: 12px;
             border-radius: 5px;
-            transition: background-color 0.3s ease;
         }
         .sidebar a:hover {
             background-color: #3d4f6a;
-        }
-        .sidebar .footer-icons {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .sidebar .footer-icons i {
-            margin: 0 15px;
-            font-size: 22px;
-            cursor: pointer;
         }
         .topbar {
             background-color: #fff;
@@ -79,11 +81,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             justify-content: space-between;
             border-bottom: 1px solid #ddd;
             margin-left: 240px;
-        }
-        .topbar .dropdown-toggle {
-            background: none;
-            border: none;
-            padding: 0;
         }
         .content {
             margin-left: 260px;
@@ -98,39 +95,25 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             position: fixed;
             bottom: 0;
             left: 240px;
-            width: calc(100% - 300px);
-            height: 7%;
+            width: calc(100% - 240px);
         }
-        .dropdown-menu-end {
-            min-width: 150px;
+        .table td, .table th {
+            vertical-align: middle;
         }
-        .footer-icons i:hover {
-            color: #007bff;
+        .footer-icons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
-        .dropdown-menu {
-            padding: 0;
-        }
-        .dropdown-menu a {
-            padding: 10px 15px;
-        }
-        .dropdown-menu a:hover {
-            background-color: lightgrey;
-            color: #1a0101;
-        }
-        .content h2 {
-            font-size: 32px;
-            font-weight: bold;
-            color: #343a40;
-        }
-        .content p {
-            font-size: 18px;
-            color: #6c757d;
+        .footer-icons i {
+            font-size: 24px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-
+<!-- Sidebar -->
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
 
@@ -155,7 +138,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         </ul>
     </div>
     
-   
     <div class="dropdown">
         <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bar-chart-line"></i> Reports
@@ -172,6 +154,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
 </div>
 
+<!-- Topbar -->
 <div class="topbar">
     <div>
         <button class="btn btn-light"><i class="bi bi-list"></i></button>
@@ -190,17 +173,97 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
 </div>
 
-
 <div class="content">
-    <h2>Welcome to the Dashboard</h2>
-    
+    <h2>Customer List</h2>
+
+    <!-- Sender List -->
+    <h3>Senders</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Customer Mobile</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($result_senders->num_rows > 0): ?>
+                <?php while ($row = $result_senders->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $row['id']; ?></td>
+                        <td><?php echo $row['customer_name']; ?></td>
+                        <td><?php echo $row['customer_mobile']; ?></td>
+                        <td>
+                            <a href="edit_customer.php?id=<?php echo $row['id']; ?>" class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this customer?')">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="4">No Senders found.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
+    <!-- Receiver List -->
+    <h3>Receivers</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Customer Mobile</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($result_receivers->num_rows > 0): ?>
+                <?php while ($row = $result_receivers->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $row['id']; ?></td>
+                        <td><?php echo $row['customer_name']; ?></td>
+                        <td><?php echo $row['customer_mobile']; ?></td>
+                        <td>
+                            <a href="edit_customer.php?id=<?php echo $row['id']; ?>" class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this customer?')">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="4">No Receivers found.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
 </div>
 
-
 <div class="footer">
-    <p></p>
+    &copy; 2025 SAI Courier and Cargo
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+
+<?php if (isset($_GET['message'])): ?>
+    <script type="text/javascript">
+        alert('<?php echo $_GET['message']; ?>');
+    </script>
+<?php endif; ?>
+
 </body>
 </html>
+
+<?php
+$conn->close();
+?>

@@ -1,26 +1,58 @@
 <?php
-session_start();
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) {
-    header("Location: login.php");
-    exit();
+$servername = "localhost"; 
+$username = "root"; 
+$password = ""; 
+$dbname = "user"; 
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$dest_id = 0;
+$dest_name = '';
+$dest_status = '';
+
+if (isset($_GET['id'])) {
+    $dest_id = intval($_GET['id']);
+    $sql = "SELECT * FROM destination WHERE dest_id = $dest_id";
+    $result = $conn->query($sql);
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $dest_name = $row['dest_name'];
+        $dest_status = $row['dest_status'];
+    } else {
+        echo "Destination not found.";
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $dest_id = intval($_POST['dest_id']); // Retrieve dest_id from hidden input field
+    $dest_name = $_POST['dest_name'];
+    $dest_status = $_POST['dest_status'];
+
+    $sql = "UPDATE destination SET dest_name = ?, dest_status = ? WHERE dest_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssi", $dest_name, $dest_status, $dest_id);
+
+    if ($stmt->execute()) {
+        echo "<script>alert('Destination updated successfully!'); window.location.href='showlist.php';</script>";
+    } else {
+        echo "Error updating record: " . $stmt->error;
+    }
+    $stmt->close();
 }
 ?>
-
-
-
-
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Example</title>
+    <title>Edit Destination</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -126,10 +158,38 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
             font-size: 18px;
             color: #6c757d;
         }
+        .form-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-submit {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
     </style>
+    <script>
+        function validateDestinationInput() {
+            const destName = document.getElementById('dest_name').value;
+            const textOnlyPattern = /^[a-zA-Z\s]+$/;
+            if (!textOnlyPattern.test(destName)) {
+                alert("Please enter text only in the Destination field.");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
-
 
 <div class="sidebar">
     <h2>SAI CURRIER AND CARGO</h2>
@@ -155,7 +215,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
         </ul>
     </div>
     
-   
     <div class="dropdown">
         <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bar-chart-line"></i> Reports
@@ -190,12 +249,36 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['session_id'] !== session_id()) 
     </div>
 </div>
 
-
 <div class="content">
-    <h2>Welcome to the Dashboard</h2>
-    
-</div>
+    <h2>Edit Destination</h2>
+    <div class="form-container">
+        <form method="POST" action="edit_destination.php" onsubmit="return validateDestinationInput()">
+            <!-- Hidden input to pass dest_id -->
+            <input type="hidden" name="dest_id" value="<?php echo $dest_id; ?>">
 
+            <div class="mb-3">
+                <label for="dest_name" class="form-label">Destination Name</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="dest_name" 
+                    name="dest_name" 
+                    value="<?php echo htmlspecialchars($dest_name); ?>" 
+                    required 
+                    pattern="[a-zA-Z\s]+" 
+                    title="Only letters and spaces are allowed.">
+            </div>
+            <div class="mb-3">
+                <label for="dest_status" class="form-label">Status</label>
+                <select class="form-select" id="dest_status" name="dest_status" required>
+                    <option value="active" <?php echo $dest_status === 'active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="inactive" <?php echo $dest_status === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-submit">Update Destination</button>
+        </form>
+    </div>
+</div>
 
 <div class="footer">
     <p></p>
